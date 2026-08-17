@@ -1,28 +1,64 @@
-// Positionen in Prozent bezogen auf das generierte 1536x1024-Levelbild.
-const objects=[
- {name:'Shirt',x:65.7,y:54.4,w:11.3,h:7.7,target:'laundry'},
- {name:'Socke',x:51.5,y:67.3,w:7.0,h:7.6,target:'laundry'},
- {name:'Buch',x:20.5,y:72.4,w:8.6,h:6.7,target:'shelf'},
- {name:'Kopfhörer',x:43.2,y:65.0,w:8.1,h:8.0,target:'desk'},
- {name:'Papierknäuel',x:35.5,y:63.0,w:6.3,h:8.0,target:'trash'},
- {name:'Hoodie',x:63.0,y:64.8,w:15.0,h:12.8,target:'laundry'},
- {name:'Rucksack',x:53.5,y:55.0,w:14.0,h:11.5,target:'wardrobe'},
- {name:'Skateboard',x:88.0,y:38.0,w:8.5,h:39.5,target:'wardrobe'}
+const items=[
+ {id:"shirt",img:"item-shirt.png",x:.72,y:.77,w:.105,target:"waesche"},
+ {id:"socke",img:"item-socke.png",x:.54,y:.79,w:.065,target:"waesche"},
+ {id:"buch",img:"item-buch.png",x:.36,y:.82,w:.095,target:"regal"},
+ {id:"kopfhoerer",img:"item-kopfhoerer.png",x:.47,y:.75,w:.09,target:"schreibtisch"},
+ {id:"becher",img:"item-becher.png",x:.63,y:.70,w:.07,target:"schreibtisch"},
+ {id:"papier",img:"item-papier.png",x:.42,y:.70,w:.075,target:"papierkorb"},
+ {id:"stifte",img:"item-stifte.png",x:.67,y:.73,w:.075,target:"schreibtisch"},
+ {id:"hoodie",img:"item-hoodie.png",x:.79,y:.79,w:.12,target:"waesche"}
 ];
+// Coordinates are relative to the visible room image, so the whole scene always fits on screen.
 const targets={
- laundry:{x:76.0,y:52.5,w:13.5,h:21.5,label:'Wäschekorb'},
- shelf:{x:61.5,y:7.5,w:14.5,h:42,label:'Regal'},
- desk:{x:31.0,y:29.5,w:29,h:24,label:'Schreibtisch'},
- trash:{x:55.0,y:44.0,w:7.5,h:14,label:'Papierkorb'},
- wardrobe:{x:76.0,y:5.0,w:18.0,h:48,label:'Schrank'}
+ waesche:{x:.88,y:.69,w:.16,h:.28},
+ regal:{x:.69,y:.36,w:.16,h:.45},
+ schreibtisch:{x:.53,y:.47,w:.28,h:.17},
+ papierkorb:{x:.66,y:.60,w:.10,h:.20}
 };
-const stage=document.querySelector('#stage'),msg=document.querySelector('#msg'),score=document.querySelector('#score');let solved=0,active=null;
-function box(el,o){Object.assign(el.style,{left:o.x+'%',top:o.y+'%',width:o.w+'%',height:o.h+'%'})}
-Object.entries(targets).forEach(([id,o])=>{let e=document.createElement('div');e.className='target';e.dataset.id=id;box(e,o);stage.appendChild(e)});
-objects.forEach((o,i)=>{let e=document.createElement('div');e.className='hotspot';e.dataset.i=i;e.setAttribute('aria-label',o.name);box(e,o);stage.appendChild(e);let sx,sy,sl,st;
- e.addEventListener('pointerdown',ev=>{active=e;e.setPointerCapture(ev.pointerId);let r=e.getBoundingClientRect(),g=document.querySelector('#game').getBoundingClientRect();sx=ev.clientX;sy=ev.clientY;sl=r.left-g.left;st=r.top-g.top;e.classList.add('drag');msg.textContent=o.name+' → wohin gehört das?'});
- e.addEventListener('pointermove',ev=>{if(active!==e)return;let g=document.querySelector('#game').getBoundingClientRect();e.style.left=(sl+ev.clientX-sx)/g.width*100+'%';e.style.top=(st+ev.clientY-sy)/g.height*100+'%';document.querySelectorAll('.target').forEach(t=>t.classList.toggle('hot',inside(ev.clientX,ev.clientY,t)&&t.dataset.id===o.target))});
- e.addEventListener('pointerup',ev=>{if(active!==e)return;let good=[...document.querySelectorAll('.target')].find(t=>t.dataset.id===o.target&&inside(ev.clientX,ev.clientY,t));document.querySelectorAll('.target').forEach(t=>t.classList.remove('hot'));e.classList.remove('drag');if(good){e.remove();solved++;score.textContent=solved;msg.textContent='✓ '+o.name+' richtig aufgeräumt';if(solved===objects.length)setTimeout(()=>document.querySelector('#done').style.display='flex',300)}else{box(e,o);msg.textContent='Das ist noch nicht der richtige Platz für '+o.name+'.'}active=null})
-});
-function inside(x,y,e){let r=e.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom}
-document.querySelector('#help').onclick=()=>{document.querySelectorAll('.hotspot').forEach(e=>e.classList.add('ready'));document.querySelectorAll('.target').forEach(e=>e.classList.add('hot'));msg.textContent='Gelb = Gegenstände · Grün = mögliche Ablagebereiche';setTimeout(()=>{document.querySelectorAll('.hotspot').forEach(e=>e.classList.remove('ready'));document.querySelectorAll('.target').forEach(e=>e.classList.remove('hot'))},1800)};
+const stage=document.querySelector("#stage"), room=document.querySelector("#room"), field=document.querySelector("#playfield");
+let solved=0;
+
+function layout(){
+ const sr=stage.getBoundingClientRect(), rr=room.getBoundingClientRect();
+ field.style.left=(rr.left-sr.left)+"px"; field.style.top=(rr.top-sr.top)+"px";
+ field.style.width=rr.width+"px"; field.style.height=rr.height+"px";
+ document.querySelectorAll(".item").forEach(el=>{
+   const d=items.find(i=>i.id===el.dataset.id);
+   if(!el.dataset.done){el.style.left=(d.x*100)+"%";el.style.top=(d.y*100)+"%"}
+   el.style.width=(d.w*100)+"%";
+ });
+}
+function make(){
+ Object.entries(targets).forEach(([id,z])=>{
+   const el=document.createElement("div");el.className="zone";el.dataset.id=id;
+   Object.assign(el.style,{left:z.x*100+"%",top:z.y*100+"%",width:z.w*100+"%",height:z.h*100+"%"});field.append(el);
+ });
+ items.forEach(d=>{
+   const el=document.createElement("img");el.src=d.img;el.className="item";el.dataset.id=d.id;el.alt=d.id;
+   el.style.left=d.x*100+"%";el.style.top=d.y*100+"%";el.style.width=d.w*100+"%";field.append(el);drag(el,d);
+ });
+ layout();
+}
+function zoneAt(px,py,id){
+ const z=targets[id], r=field.getBoundingClientRect(), x=(px-r.left)/r.width, y=(py-r.top)/r.height;
+ return x>z.x-z.w/2&&x<z.x+z.w/2&&y>z.y-z.h/2&&y<z.y+z.h/2;
+}
+function drag(el,d){
+ let pid;
+ el.addEventListener("pointerdown",e=>{if(el.dataset.done)return;pid=e.pointerId;el.setPointerCapture(pid);el.classList.add("drag")});
+ el.addEventListener("pointermove",e=>{
+  if(pid!==e.pointerId)return;const r=field.getBoundingClientRect();
+  el.style.left=((e.clientX-r.left)/r.width*100)+"%";el.style.top=((e.clientY-r.top)/r.height*100)+"%";
+  document.querySelectorAll(".zone").forEach(z=>z.classList.toggle("hot",z.dataset.id===d.target&&zoneAt(e.clientX,e.clientY,d.target)));
+ });
+ el.addEventListener("pointerup",e=>{
+  if(pid!==e.pointerId)return;pid=null;el.classList.remove("drag");document.querySelectorAll(".zone").forEach(z=>z.classList.remove("hot"));
+  if(zoneAt(e.clientX,e.clientY,d.target)){
+    const z=targets[d.target];el.style.left=z.x*100+"%";el.style.top=z.y*100+"%";el.style.opacity="0";el.style.pointerEvents="none";el.dataset.done="1";
+    solved++;document.querySelector("#progress").textContent=solved+" / "+items.length;
+    if(solved===items.length)setTimeout(()=>document.querySelector("#finish").style.display="flex",300);
+  } else {el.style.left=d.x*100+"%";el.style.top=d.y*100+"%"}
+ });
+}
+room.addEventListener("load",()=>{make()}); window.addEventListener("resize",layout);
+if(room.complete) make();

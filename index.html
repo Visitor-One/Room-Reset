@@ -1,2 +1,27 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#171715"><title>Room Reset</title><link rel="stylesheet" href="style.css"></head><body>
-<main id="game"><img id="room" src="level1-room.png" alt="Jugendzimmer"><div id="hud"><b>ROOM RESET · STUFE 1</b><span><strong id="score">0</strong>/8 aufgeräumt</span></div><button id="help">?</button><div id="msg">Ziehe die herumliegenden Gegenstände an ihren richtigen Platz.</div><div id="stage"></div><div id="done"><section><h1>Zimmer aufgeräumt!</h1><p>Stufe 1 geschafft.</p><button onclick="location.reload()">Nochmal spielen</button></section></div></main><script src="game.js"></script></body></html>
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#171717">
+<title>Room Reset – Stufe 1</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app">
+  <header>
+    <div><strong>ROOM RESET</strong><span>Stufe 1 · Jugendzimmer</span></div>
+    <div id="progress">0 / 8</div>
+  </header>
+  <section id="stage" aria-label="Zimmer">
+    <img id="room" src="level1-room.jpg" alt="">
+    <div id="playfield"></div>
+    <div id="message">Ziehe die herumliegenden Dinge an ihren richtigen Platz.</div>
+  </section>
+  <div id="finish">
+    <div class="card"><h1>Aufgeräumt!</h1><p>Alle 8 Gegenstände sind an ihrem Platz.</p><button onclick="location.reload()">Nochmal</button></div>
+  </div>
+</main>
+<script src="game.js"></script>
+</body>
+</html>
